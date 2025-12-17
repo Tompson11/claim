@@ -40,6 +40,8 @@ def get_default_pipeline(params):
     coarse_iters = params["coarse_iters"]
     fine_trans_range = params["fine_trans_range"]
     fine_iters = params["fine_iters"]
+    seed = params["seed"] if "seed" in params else None
+    print(seed)
 
     def pipeline(T_init, frame_data, socket=None):
         def func0(lidar_depths, mono_depth): return pearson_loss(
@@ -54,7 +56,7 @@ def get_default_pipeline(params):
         def func3(lidar_depths, mono_depth): return pearson_loss(lidar_depths, mono_depth,
                                                                  patch_size, shift=patch_size // 2, weight=None, set_zero_to=-1.0) / 5.0
 
-        print_transform_in_euler_and_translation(T_init)
+        print_transform_in_euler_and_translation(T_init, outline="initial")
 
         if socket is not None:
             def socket_callback(step_name, freq, iter, total_iters, T_best):
@@ -93,6 +95,7 @@ def get_default_pipeline(params):
                                                             coarse_trans_range],
                                         translation_perturb_at_opt=False,
                                         loss_func_intensity=[NID_loss],
+                                        seed=seed,
                                         callback=callback1)
 
         T_est = random_search_transform(T_init=T_est,
@@ -104,9 +107,10 @@ def get_default_pipeline(params):
                                                             fine_trans_range],
                                         translation_perturb_at_opt=False,
                                         loss_func_intensity=[NID_loss],
+                                        seed=seed,
                                         callback=callback2)
 
-        print_transform_in_euler_and_translation(T_est)
+        print_transform_in_euler_and_translation(T_est, outline="final")
 
         return T_est
 
@@ -119,6 +123,7 @@ def get_finetune_both_pipeline(params):
     fine_rot_range = params["fine_rot_range"]
     fine_trans_range = params["fine_trans_range"]
     fine_iters = params["fine_iters"]
+    seed = params["seed"] if "seed" in params else None
 
     def pipeline(T_init, frame_data, socket=None):
         def func0(lidar_depths, mono_depth): return pearson_loss(
@@ -127,7 +132,7 @@ def get_finetune_both_pipeline(params):
         def func1(lidar_depths, mono_depth): return pearson_loss(lidar_depths, mono_depth,
                                                                  patch_size, shift=patch_size // 2, weight=None, set_zero_to=-1.0) / 5.0
 
-        print_transform_in_euler_and_translation(T_init)
+        print_transform_in_euler_and_translation(T_init, outline="initial")
 
         if socket is not None:
             def socket_callback(step_name, freq, iter, total_iters, T_best):
@@ -158,7 +163,10 @@ def get_finetune_both_pipeline(params):
                                          translation_perturb_at_opt=False,
                                          rotation_candidate_num=3,
                                          loss_func_intensity=[NID_loss],
+                                         seed=seed,
                                          callback=callback0)
+
+        print_transform_in_euler_and_translation(T_est, outline="final")
 
         return T_est
 
@@ -170,22 +178,19 @@ def get_finetune_single_pipeline(params):
     mode = PipelineMode(params["mode"])
     patch_size = int(params["patch_size"])
     search_mode = SearchMode(params["search_mode"])
-    fine_iters = params["fine_iters"]
-
+    seed = params["seed"] if "seed" in params else None
+    
+    # get search ranges
     if mode == PipelineMode.FINETUNE_RORATION:
         fine_rot_range = params["fine_rot_range"]
-        fine_rot_resolution = params["fine_rot_resolution"]
         rotation_ranges = [-fine_rot_range,
                            fine_rot_range] if fine_rot_range > 0 else None
         translation_ranges = None
-        fine_trans_resolution = 0
     else:
         fine_trans_range = params["fine_trans_range"]
-        fine_trans_resolution = params["fine_trans_resolution"]
         translation_ranges = [-fine_trans_range,
                               fine_trans_range] if fine_trans_range > 0 else None
         rotation_ranges = None
-        fine_rot_resolution = None
 
     def pipeline(T_init, frame_data, socket=None):
         def func0(lidar_depths, mono_depth): return pearson_loss(
@@ -194,7 +199,7 @@ def get_finetune_single_pipeline(params):
         def func1(lidar_depths, mono_depth): return pearson_loss(lidar_depths, mono_depth,
                                                                  patch_size, shift=patch_size // 2, weight=None, set_zero_to=-1.0) / 5.0
 
-        print_transform_in_euler_and_translation(T_init)
+        print_transform_in_euler_and_translation(T_init, outline="initial")
 
         if socket is not None:
             def socket_callback(step_name, freq, iter, total_iters, T_best):
@@ -213,6 +218,14 @@ def get_finetune_single_pipeline(params):
             callback0 = None
 
         if search_mode == SearchMode.GRID_SEARCH:
+            # get search resolutions
+            if mode == PipelineMode.FINETUNE_RORATION:
+                fine_rot_resolution = params["fine_rot_resolution"]
+                fine_trans_resolution = 0
+            else:
+                fine_trans_resolution = params["fine_trans_resolution"]
+                fine_rot_resolution = 0
+
             T_est = grid_search_transform(T_init=T_init,
                                           loss_func=[func0, func1],
                                           frame_data=frame_data,
@@ -225,6 +238,9 @@ def get_finetune_single_pipeline(params):
                                           loss_func_intensity=[NID_loss],
                                           callback=callback0)
         else:
+            # get search iterations
+            fine_iters = params["fine_iters"]
+            
             T_est = random_search_transform2(T_init=T_init,
                                              loss_func=[func0, func1],
                                              frame_data=frame_data,
@@ -235,7 +251,10 @@ def get_finetune_single_pipeline(params):
                                              translation_perturb_at_opt=False,
                                              rotation_candidate_num=3,
                                              loss_func_intensity=[NID_loss],
+                                             seed=seed,
                                              callback=callback0)
+
+        print_transform_in_euler_and_translation(T_est, outline="final")
 
         return T_est
 

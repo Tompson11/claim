@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CLAIM</title>
+    <link rel="icon" href="/static/img/tools.svg" type="image/x-icon">
+</head>
+
+<body style="margin: 0px;">
+
+    <style>
+        .panel-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: royalblue;
+            display: flex;
+            align-items: center;
+        }
+
+        .parameter-h1 {
+            font-size: 30px;
+            font-weight: bolder;
+        }
+
+        .parameter-h2 {
+            font-size: 20px;
+            font-style: italic;
+            font-weight: bold;
+            color: black;
+        }
+
+        .parameter-h3 {
+            font-size: 18px;
+            font-style: oblique;
+            font-weight: bold;
+            color: crimson;
+        }
+
+        .el-input__inner {
+            font-size: 16px !important;
+            font-weight: 400 !important;
+        }
+
+        .el-card__header {
+            background-color: aliceblue
+        }
+
+        .el-table .checked_row {
+            background: rgba(255, 0, 0, 0.3);
+        }
+
+        .el-table .unchecked_row {
+            background: #ffffff;
+        }
+
+        .el-carousel {
+            text-align: center;
+        }
+
+        /* .el-input-group__prepend {
+            font-size: 18px !important;
+            font-weight: 600 !important;
+            width: 100px;
+            text-align: center;
+        } */
+
+        .el-input {
+            margin-top: 2px;
+            margin-bottom: 2px;
+        }
+
+        .input-extrinsic .el-input-group__prepend {
+            font-size: 18px;
+            font-weight: 600;
+            width: 10%;
+            text-align: center;
+            /* 设置 prepend 长度为 50px */
+        }
+
+        .input-pipeline .el-input-group__prepend {
+            font-size: 18px;
+            font-weight: 600;
+            width: 120px;
+            text-align: center;
+        }
+
+        .scan-1 {
+            position: relative;
+            padding: 6px 18px;
+            color: #fff;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        .scan-1::before {
+            content: '';
+            position: absolute;
+            left: -100%;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.6) 50%,
+                    transparent 100%);
+            animation: scan 10s ease-in-out infinite;
+        }
+
+        @keyframes scan {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+    </style>
+    <div id="app" style="margin: 0px;">
+        <el-container>
+            <el-header class="scan-1" style="width: 100%; color: black; background-color: rgb(250, 250, 240); font-size: 40px; font-weight: bolder; padding: 0px; margin: 0px; display: flex;
+                align-items: center;">
+                <span style="margin-left: 20px;">🎯 CLAIM: Camera-LiDAR Alignment with Intensity and Monodepth </span>
+            </el-header>
+
+            <el-main>
+                <el-row :gutter="20">
+                    <el-col :span="12">
+                        <!-- uploader -->
+                        <el-tabs type="border-card">
+                            <div v-if="uploading || calibrating"
+                                style="background-color: rgba(255, 255, 255, 0.6); position: absolute; height: 100%; width: 100%; display: flex; justify-content: center; align-items: center; z-index: 100000000; flex-direction: column;">
+                                <el-progress type="circle" :percentage="progressPercent" :format="formatProgress"
+                                    style="display: flex; align-items: center;">
+                                </el-progress>
+                                <div>Time:{[elapsedTime]}</div>
+                            </div>
+
+
+
+                            <el-tab-pane>
+                                <span slot="label" class="panel-title"><i class="el-icon-upload"></i> Upload
+                                    Image-Pointcloud Pairs
+                                    <el-button @click="exampleVisible = true" size="small"
+                                        style="margin-left: 10px; font-size: 15px; font-weight: bold;" type="info"
+                                        plain>
+                                        Try examples! </el-button>
+                                </span>
+
+                                <el-dialog title="Example" :visible.sync="exampleVisible"
+                                    v-loading.fullscreen.lock="exampleLoading">
+                                    <el-row>
+                                        <el-col :span="8" v-for="obj in exampleInfos">
+                                            <el-card :body-style="{ padding: '0px' }">
+                                                <el-image :src="obj.img_path" style="max-height: 400px; width: 100%;"
+                                                    lazy></el-image>
+                                                <div style="padding: 14px;">
+                                                    <span> {[ obj.name ]} </span>
+                                                    <div class="bottom clearfix">
+                                                        <el-button type="text" class="button"
+                                                            @click="handleExample(obj)">Try</el-button>
+                                                    </div>
+                                                </div>
+                                            </el-card>
+                                        </el-col>
+                                    </el-row>
+                                </el-dialog>
+
+                                <span
+                                    style="font-weight: 500; font-style: italic; font-size: 18px;">Images({[fileListImage.length]})</span>
+                                <div
+                                    style="display: flex; flex-wrap: nowrap; max-height: 160px;  flex-direction: row; white-space: nowrap;  overflow-y: hidden; margin-top: 5px; margin-bottom: 5px;">
+                                    <el-upload action="/haha" list-type="picture-card" :auto-upload="false"
+                                        ref="upload-image" :file-list="fileListImage" :on-change="handleImageChange"
+                                        accept=".jpg,.jpeg,.png">
+                                        <i slot="default" class="el-icon-picture"></i>
+                                        <div slot="file" slot-scope="{file}">
+                                            <img class="el-upload-list__item-thumbnail" :src="file.url" alt="">
+                                            <span class="el-upload-list__item-actions" style="background-color: black;">
+                                                <span class="el-upload-list__item-preview"
+                                                    @click="handlePictureCardPreview(file)">
+                                                    <i class="el-icon-zoom-in"></i>
+                                                </span>
+                                                <span v-if="!disabled" class="el-upload-list__item-delete"
+                                                    @click="handleImageRemove(file)">
+                                                    <i class="el-icon-delete"></i>
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </el-upload>
+                                </div>
+
+                                <span
+                                    style="font-weight: 500;font-style: italic; font-size: 18px;">PointClouds({[fileListPcd.length]})</span>
+                                <div
+                                    style="display: flex; flex-wrap: nowrap; max-height: 160px;  flex-direction: row; white-space: nowrap; overflow-y: hidden; margin-top: 5px; margin-bottom: 5px;">
+                                    <el-upload action="/haha" list-type="picture-card" :auto-upload="false"
+                                        ref="upload-pcd" :file-list="fileListPcd" :on-change="handlePcdChange"
+                                        accept=".pcd,.ply">
+                                        <i slot="default" class="el-icon-plus"></i>
+                                        <div slot="file" slot-scope="{file}">
+                                            <div style="text-align: center; height: 100%;">
+                                                {[ file.name ]}
+                                            </div>
+                                            <span class="el-upload-list__item-actions">
+                                                <span class="el-upload-list__item-preview"
+                                                    @click="handlePictureCardPreview(file)">
+                                                    <i class="el-icon-zoom-in"></i>
+                                                </span>
+                                                <span v-if="!disabled" class="el-upload-list__item-delete"
+                                                    @click="handlePcdRemove(file)">
+                                                    <i class="el-icon-delete"></i>
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </el-upload>
+                                </div>
+
+                                <el-button style="width: 100%; font-size: 20px; font-weight: bolder;" size="small"
+                                    type="success" @click="submitUpload">Submit
+                                    and Calibrate!</el-button>
+
+                                <el-dialog :visible.sync="dialogVisible">
+                                    <img width="100%" :src="dialogImageUrl" alt="">
+                                </el-dialog>
+                            </el-tab-pane>
+                        </el-tabs>
+
+                        <br></br>
+
+                        <el-tabs type="border-card">
+                            <el-tab-pane>
+                                <span slot="label" class="panel-title"><i class="el-icon-setting"></i> Set
+                                    Paramters</span>
+                                <el-row :gutter="20">
+
+                                    <!-- Extrinsics -->
+                                    <el-col :span="8">
+                                        <el-card class="box-card">
+                                            <div slot="header" class="clearfix">
+                                                <span class="parameter-h1">Extrinsics</span>
+                                                <el-button size="small" type="primary" @click="exportExtrinsics"
+                                                    style="float: right; font-size: 15px; font-weight: bold;"> export
+                                                </el-button>
+                                            </div>
+
+                                            <div
+                                                style="display:flex;align-items:center;margin-top: 10px; margin-bottom: 10px;">
+                                                <img src="/static/img/rotate-left-svgrepo-com.svg" alt="star" width="30"
+                                                    style="display: inline-block">
+                                                <span class="parameter-h2" style="margin-left: 15px;">Rotation</span>
+                                            </div>
+
+                                            <el-row type="flex" align="middle" style="height: 45px;">
+                                                <el-col :span="8" style="display:flex;align-items:center;">
+                                                    <span class="parameter-h3">Format</span>
+                                                </el-col>
+                                                <el-col :span="16">
+                                                    <el-select v-model="rotationFormat" placeholder="Please choose..."
+                                                        @visible-change="onExtrinsicFormatChange">
+                                                        <el-option v-for="item in rotationFormats" :key="item"
+                                                            :label="item" :value="item" style="width: 100%;">
+                                                        </el-option>
+                                                    </el-select>
+                                                </el-col>
+                                            </el-row>
+
+                                            <!-- Euler -->
+                                            <div v-if="rotationFormat === 'Euler Angles'">
+                                                <el-row :gutter="10" type="flex" align="middle" style="height: 45px;">
+                                                    <el-col :span="8" style="display:flex;align-items:center;">
+                                                        <span class="parameter-h3">Order</span>
+                                                    </el-col>
+                                                    <el-col :span="16">
+                                                        <el-select v-model="eulerOrder" placeholder="Please choose...">
+                                                            <el-option v-for="item in eulerOrders" :key="item"
+                                                                :label="item" :value="item" style="width: 100%;">
+                                                            </el-option>
+                                                        </el-select>
+                                                    </el-col>
+                                                </el-row>
+
+
+                                                <el-row :gutter="10" type="flex" align="middle" style="height: 50px;">
+                                                    <el-col :span="8" style="display:flex;align-items:center;">
+                                                        <span class="parameter-h3">Unit</span>
+                                                    </el-col>
+                                                    <el-col :span="16">
+                                                        <el-switch v-model="eulerUnit" active-text="degree"
+                                                            inactive-text="radian" @change="onEulerUnitChange">
+                                                        </el-switch>
+                                                    </el-col>
+                                                </el-row>
+
+
+                                                <el-input placeholder="" v-model.number="eulerX" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">X</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="eulerY" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Y</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="eulerZ" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Z</template>
+                                                </el-input>
+                                            </div>
+
+                                            <!-- Quaternion -->
+                                            <div v-if="rotationFormat === 'Quaternion'">
+                                                <el-input placeholder="" v-model.number="quatX" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">X</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="quatY" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Y</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="quatZ" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Z</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="quatW" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">W</template>
+                                                </el-input>
+                                            </div>
+
+                                            <!-- Rotation Matrix -->
+                                            <el-tooltip placement="top" v-if="rotationFormat === 'Rotation Matrix'">
+                                                <div slot="content" id="rotMatLatex"></div>
+                                                <div @mouseenter="renderRotationMatLatex">
+                                                    <el-input placeholder="" v-model.number="mat11" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat12" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat13" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat21" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat22" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat23" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat31" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat32" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="mat33" type="number"
+                                                        style="width: 30%;" @input="renderRotationMatLatex">
+                                                    </el-input>
+                                                </div>
+                                            </el-tooltip>
+
+                                            <!-- Rotation Vector -->
+                                            <div v-if="rotationFormat === 'Rotation Vector'">
+                                                <el-switch v-model="axisUnit" active-text="degree"
+                                                    inactive-text="radian" @change="onAxisUnitChange">
+                                                </el-switch>
+                                                <el-input placeholder="" v-model.number="axisX" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">X</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="axisY" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Y</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="axisZ" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Z</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="axisW" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Angle</template>
+                                                </el-input>
+                                            </div>
+
+                                            <!-- Translation Vector -->
+                                            <div class="section">
+                                                <div
+                                                    style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                    <img src="/static/img/up-down-right-left-arrow-svgrepo-com.svg"
+                                                        alt="star" width="30" style="display: inline-block">
+                                                    <span class="parameter-h2"
+                                                        style="margin-left: 15px;">Translation</span>
+                                                </div>
+
+                                                <!-- <div class="parameter-h2" style="margin-top: 10px; margin-bottom: 10px;">Translation</div> -->
+                                                <el-input placeholder="" v-model.number="transX" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">X</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="transY" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Y</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="transZ" type="number"
+                                                    class="input-extrinsic">
+                                                    <template slot="prepend">Z</template>
+                                                </el-input>
+                                            </div>
+
+                                            <!-- History Result -->
+                                            <el-button
+                                                style="width: 100%; font-size: 20px; font-weight: bolder; margin-top: 10px;"
+                                                size="small" type="danger" @click="dialogTableVisible = true">History
+                                                Results</el-button>
+                                            <el-dialog title="History" :visible.sync="dialogTableVisible">
+                                                <el-table :data="historyResults"
+                                                    :header-cell-style="historyHeaderStyle">
+                                                    <el-table-column label="Time" width="180">
+                                                        <template slot-scope="scope">
+                                                            <i class="el-icon-time"></i>
+                                                            <span
+                                                                style="margin-left: 10px; font-size: 15px; font-weight: bold;">{[
+                                                                scope.row.time ]}</span>
+                                                        </template>
+                                                    </el-table-column>
+
+                                                    <el-table-column label="Mode" width="150">
+                                                        <template slot-scope="scope"><span
+                                                                style="margin-left: 10px; font-size: 15px; font-weight: bold; color:cadetblue;">{[
+                                                                scope.row.mode ]}</span></template>
+                                                    </el-table-column>
+
+                                                    <el-table-column label="Initial" width="350">
+                                                        <template slot-scope="scope">
+
+                                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                                <div>
+                                                                    <div
+                                                                        style="display: inline-block; margin-top: 5px; margin-bottom: 5px;">
+                                                                        <el-tag size="medium"
+                                                                            style="width: 120px; font-size: 18px;  font-weight: bold;">
+                                                                            Rotation
+                                                                        </el-tag>
+                                                                        <span
+                                                                            style="margin-left: 10px; font-size: 18px; font-weight: bold;">{[
+                                                                            scope.row.extrinsics.rotation
+                                                                            ]}</span>
+                                                                    </div>
+
+                                                                    <div
+                                                                        style="display: inline-block; margin-top: 5px; margin-bottom: 5px">
+                                                                        <el-tag size="medium"
+                                                                            style="width: 120px; font-size: 18px;  font-weight: bold;"
+                                                                            type="warning"> Translation
+                                                                        </el-tag>
+                                                                        <span
+                                                                            style="margin-left: 10px; font-size: 18px; font-weight: bold;">{[
+                                                                            scope.row.extrinsics.translation
+                                                                            ]}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div>
+                                                                    <el-button plain size="mini"
+                                                                        @click="applyExtrinsic(scope.$index, true)">
+                                                                        Apply
+                                                                    </el-button>
+                                                                </div>
+                                                            </div>
+
+
+                                                        </template>
+                                                    </el-table-column>
+
+                                                    <el-table-column label="Final" width="350">
+                                                        <template slot-scope="scope">
+                                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                                <div>
+                                                                    <div
+                                                                        style="display: inline-block; margin-top: 5px; margin-bottom: 5px">
+                                                                        <el-tag size="medium"
+                                                                            style="width: 120px; font-size: 18px; font-weight: bold;">
+                                                                            Rotation
+                                                                        </el-tag>
+                                                                        <span
+                                                                            style="margin-left: 10px; font-size: 18px; font-weight: bold;">{[
+                                                                            scope.row.result.rotation
+                                                                            ]}</span>
+                                                                    </div>
+
+                                                                    <div
+                                                                        style="display: inline-block; margin-top: 5px; margin-bottom: 5px">
+                                                                        <el-tag size="medium"
+                                                                            style="width: 120px; font-size: 18px;  font-weight: bold;"
+                                                                            type="warning"> Translation
+                                                                        </el-tag>
+                                                                        <span
+                                                                            style="margin-left: 10px; font-size: 18px; font-weight: bold;">{[
+                                                                            scope.row.result.translation
+                                                                            ]}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div>
+                                                                    <el-button plain size="mini"
+                                                                        @click="applyExtrinsic(scope.$index, false)">
+                                                                        Apply
+                                                                    </el-button>
+                                                                </div>
+
+                                                            </div>
+                                                        </template>
+                                                    </el-table-column>
+
+                                                    <!-- <el-table-column property="name" label="姓名" width="200">
+                                                    </el-table-column>
+                                                    <el-table-column property="address" label="地址"></el-table-column> -->
+                                                </el-table>
+                                            </el-dialog>
+                                    </el-col>
+                                    </el-card>
+
+                                    <!-- Intrinsics -->
+                                    <el-col :span="8" v-if="true">
+                                        <el-card class="box-card">
+                                            <div slot="header" class="clearfix">
+                                                <span class="parameter-h1">Intrinsics</span>
+                                            </div>
+
+                                            <div>
+                                                <div style="display:flex;align-items:center; margin-bottom: 10px;">
+                                                    <img src="/static/img/camera-svgrepo-com.svg" alt="star" width="30"
+                                                        style="display: inline-block">
+                                                    <span class="parameter-h2" style="margin-left: 15px;">Camera
+                                                        Model</span>
+                                                </div>
+                                                <el-select v-model="cameraModel" placeholder="">
+                                                    <el-option v-for="item in cameraModels" :key="item" :label="item"
+                                                        :value="item">
+                                                    </el-option>
+                                                </el-select>
+
+
+                                                <!-- K -->
+                                                <div>
+                                                    <div
+                                                        style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                        <img src="/static/img/matrix-svgrepo-com.svg" alt="star"
+                                                            width="30" style="display: inline-block">
+                                                        <span class="parameter-h2" style="margin-left: 15px;">K</span>
+                                                    </div>
+                                                    <el-input placeholder="" v-model="fx" type="number"
+                                                        class="input-extrinsic">
+                                                        <template slot="prepend">fx</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model="fy" type="number"
+                                                        class="input-extrinsic">
+                                                        <template slot="prepend">fy</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model="cx" type="number"
+                                                        class="input-extrinsic">
+                                                        <template slot="prepend">cx</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model="cy" type="number"
+                                                        class="input-extrinsic">
+                                                        <template slot="prepend">cy</template>
+                                                    </el-input>
+                                                </div>
+
+                                                <!-- K -->
+                                                <div>
+                                                    <div
+                                                        style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                        <img src="/static/img/distort-svgrepo-com.svg" alt="star"
+                                                            width="30" style="display: inline-block">
+                                                        <span class="parameter-h2" style="margin-left: 15px;">Distortion
+                                                            Coefficients</span>
+                                                    </div>
+
+                                                    <div v-if="cameraModel === 'Pinhole'">
+                                                        <el-input placeholder="" v-model="dc0" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k1</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc1" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k2</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc2" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">p1</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc3" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">p2</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc4" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k3</template>
+                                                        </el-input>
+                                                    </div>
+
+                                                    <div v-if="cameraModel === 'Fisheye'">
+                                                        <el-input placeholder="" v-model="dc0" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k1</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc1" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k2</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc2" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k3</template>
+                                                        </el-input>
+                                                        <el-input placeholder="" v-model="dc3" type="number"
+                                                            class="input-extrinsic">
+                                                            <template slot="prepend">k4</template>
+                                                        </el-input>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                        </el-card>
+                                    </el-col>
+
+                                    <!-- Pipelines -->
+                                    <el-col :span="8" v-if="true">
+                                        <el-card class="box-card">
+                                            <div slot="header" class="clearfix">
+                                                <span class="parameter-h1">Pipelines</span>
+                                            </div>
+
+                                            <div style="display:flex;align-items:center; margin-bottom: 10px;">
+                                                <img src="/static/img/remote-control-settings-svgrepo-com.svg"
+                                                    alt="star" width="30" style="display: inline-block">
+                                                <span class="parameter-h2" style="margin-left: 15px;">Mode</span>
+                                            </div>
+                                            <el-select v-model="pipelineMode" placeholder="please select...">
+                                                <el-option v-for="item in pipelineModes" :key="item" :label="item"
+                                                    :value="item">
+                                                </el-option>
+                                            </el-select>
+
+                                            <div>
+                                                <div
+                                                    style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                    <img src="/static/img/all-svgrepo-com.svg" alt="star" width="30"
+                                                        style="display: inline-block">
+                                                    <span class="parameter-h2" style="margin-left: 15px;">General</span>
+                                                </div>
+                                                <div>
+                                                    <el-input placeholder="" v-model.number="patchSize" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Patch Size</template>
+                                                    </el-input>
+                                                </div>
+                                            </div>
+
+                                            <div v-if="pipelineMode === 'Default'">
+                                                <div>
+                                                    <el-input placeholder="" v-model.number="seed" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Seed</template>
+                                                    </el-input>
+                                                </div>
+
+                                                <div>
+                                                    <div
+                                                        style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                        <img src="/static/img/search0-svgrepo-com.svg" alt="star"
+                                                            width="30" style="display: inline-block">
+                                                        <span class="parameter-h2" style="margin-left: 15px;">Initial
+                                                            Search</span>
+                                                    </div>
+                                                    <el-input placeholder="" v-model.number="initRotRange" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Rot Range(°)</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="initRotResolution"
+                                                        type="number" class="input-pipeline">
+                                                        <template slot="prepend">Rot Step(°)</template>
+                                                    </el-input>
+                                                </div>
+
+                                                <div>
+                                                    <div
+                                                        style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                        <img src="/static/img/search1-svgrepo-com.svg" alt="star"
+                                                            width="30" style="display: inline-block">
+                                                        <span class="parameter-h2" style="margin-left: 15px;">Coarse
+                                                            Search</span>
+                                                    </div>
+                                                    <el-input placeholder="" v-model.number="coarseTransRange"
+                                                        type="number" class="input-pipeline">
+                                                        <template slot="prepend">Trans Range(m)</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="coarseIters" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Iterations</template>
+                                                    </el-input>
+                                                </div>
+
+                                                <div>
+                                                    <div
+                                                        style="display:flex;align-items:center; margin-top: 10px; margin-bottom: 10px;">
+                                                        <img src="/static/img/search2-svgrepo-com.svg" alt="star"
+                                                            width="30" style="display: inline-block">
+                                                        <span class="parameter-h2" style="margin-left: 15px;">Fine
+                                                            Search</span>
+                                                    </div>
+                                                    <el-input placeholder="" v-model.number="fineTransRange"
+                                                        type="number" class="input-pipeline">
+                                                        <template slot="prepend">Trans Range(m)</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="fineIters" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Iterations</template>
+                                                    </el-input>
+                                                </div>
+                                            </div>
+
+                                            <div v-if="pipelineMode === 'Finetune Both'">
+                                                <el-input placeholder="" v-model.number="seed" type="number"
+                                                    class="input-pipeline">
+                                                    <template slot="prepend">Seed</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="fineRotRange" type="number"
+                                                    class="input-pipeline">
+                                                    <template slot="prepend">Rot Range(°)</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="fineTransRange" type="number"
+                                                    class="input-pipeline">
+                                                    <template slot="prepend">Trans Range(m)</template>
+                                                </el-input>
+                                                <el-input placeholder="" v-model.number="fineIters" type="number"
+                                                    class="input-pipeline">
+                                                    <template slot="prepend">Iterations</template>
+                                                </el-input>
+                                            </div>
+
+                                            <div v-if="pipelineMode === 'Finetune Rotation'">
+                                                <el-switch v-model="searchMode" active-text="Grid Search"
+                                                    inactive-text="Random Search">
+                                                </el-switch>
+                                                <el-input placeholder="" v-model.number="fineRotRange" type="number"
+                                                    class="input-pipeline">
+                                                    <template slot="prepend">Rot Range(°)</template>
+                                                </el-input>
+                                                <div v-if="searchMode">
+                                                    <el-input placeholder="" v-model.number="rotResolution"
+                                                        type="number" class="input-pipeline">
+                                                        <template slot="prepend">Rot Resolution(°)</template>
+                                                    </el-input>
+                                                </div>
+                                                <div v-if="!searchMode">
+                                                    <el-input placeholder="" v-model.number="fineIters" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Iterations</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="seed" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Seed</template>
+                                                    </el-input>
+                                                </div>
+                                            </div>
+
+                                            <div v-if="pipelineMode === 'Finetune Translation'">
+                                                <el-switch v-model="searchMode" active-text="Grid Search"
+                                                    inactive-text="Random Search">
+                                                </el-switch>
+                                                <el-input placeholder="" v-model="fineTransRange" type="number"
+                                                    class="input-pipeline">
+                                                    <template slot="prepend">Trans Range(m)</template>
+                                                </el-input>
+                                                <div v-if="searchMode">
+                                                    <el-input placeholder="" v-model.number="transResolution"
+                                                        type="number" class="input-pipeline">
+                                                        <template slot="prepend">Trans Resolution(m)</template>
+                                                    </el-input>
+                                                </div>
+                                                <div v-if="!searchMode">
+                                                    <el-input placeholder="" v-model.number="fineIters" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Iterations</template>
+                                                    </el-input>
+                                                    <el-input placeholder="" v-model.number="seed" type="number"
+                                                        class="input-pipeline">
+                                                        <template slot="prepend">Seed</template>
+                                                    </el-input>
+                                                </div>
+                                            </div>
+
+                                            </el-input>
+                                        </el-card>
+                                    </el-col>
+
+                                </el-row>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </el-col>
+
+                    <el-col :span="12">
+                        <el-tabs type="border-card" v-loading="projectionLoading">
+                            <el-tab-pane>
+
+                                <span slot="label" class="panel-title"><i class="el-icon-camera"></i> LiDAR Projection
+                                    Results </span>
+
+                                <el-row :gutter="20" type="flex" align="middle">
+                                    <el-col :span="3">
+                                        <el-button type="primary" @click="projectPcdToImage"
+                                            :disabled="fileListImage.length == 0 || fileListPcd.length == 0"
+                                            style="font-weight: bold; font-size: 15px">Project
+                                        </el-button>
+                                    </el-col>
+
+                                    <!-- <el-col :span="8">
+                                        <el-input placeholder="" v-model="pointSize" type="number">
+                                            <template slot="prepend">Point Size</template>
+                                        </el-input>
+                                    </el-col> -->
+
+                                    <el-col :span="6">
+                                        <div style="display:flex;align-items:center;">
+                                            <el-switch v-model="projectAttribute" active-text="Intensity"
+                                                inactive-text="Depth" @change="handleProjectType"
+                                                style="font-weight: bold;">
+                                            </el-switch>
+                                        </div>
+                                    </el-col>
+
+                                    <el-col :span="6">
+                                        <el-button @click="handlerReset(projectIndex)"
+                                            :disabled="fileListImage.length == 0"
+                                            style="font-weight: bold; font-size: 15px">Reset</el-button>
+                                    </el-col>
+                                </el-row>
+
+
+                                <el-carousel :autoplay="false" arrow="always" @change="onImageChange" height="450px">
+                                    <el-carousel-item v-for="(item, index) in fileListImage" :key="item.url">
+
+                                        <img :id="`carousel${index}`" :src="item.url" draggable="false"
+                                            style="height: 100%; position: relative; top: 0; left: 0; z-index:2;"
+                                            @wheel="onImageWheel" @mousemove="onImageMove" />
+
+                                        <!-- <img :id="`carousel${index}`" alt="" height="100%"> -->
+
+                                        <!-- <canvas :id="`carousel${index}`" style="height: 100%;"></canvas> -->
+                                    </el-carousel-item>
+                                </el-carousel>
+
+                                <div id="THREE_container" style="width: 100%;">
+                                </div>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </el-col>
+
+                </el-row>
+
+            </el-main>
+        </el-container>
+
+
+    </div>
+    <script src="/static/js/vue.js"></script>
+    <link href="/static/css/element-ui.css" rel="stylesheet">
+    <script src="/static/js/element-ui.js"></script>
+    <script src="/static/js/axio.js"></script>
+    <script src="/static/js/three.min.js"></script>
+    <script src="/static/js/OrbitControls.js"></script>
+    <script src="/static/js/PCDLoader.js"></script>
+    <script src="/static/js/opencv4.5.5.js" type='text/javascript'></script>
+    <!-- <script src="https://docs.opencv.org/4.5.5/opencv.js" type='text/javascript'></script> -->
+    <script src="/static/js/colormap.js"></script>
+
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script> -->
+
+    <link rel="stylesheet" href="/static/css/katex.min.css">
+    <script src="/static/js/katex.min.js"></script>
+
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            delimiters: ['{[', ']}'],
+            data: {
+                fileListImage: [],
+                fileListPcd: [],
+                dialogImageUrl: '',
+                dialogVisible: false,
+                disabled: false,
+                // Example
+                exampleVisible: false,
+                exampleLoading: false,
+                exampleInfos: [
+                    {
+                        "name": "waymo_0",
+                        "img_url": null,
+                        "img_blob": null,
+                        "pcd_url": null,
+                        "pcd_blob": null,
+                        "params": null,
+                    }
+                ],
+                // control vis
+                uploading: false,
+                calibrating: false,
+                calibratingStatus: "",
+                progressPercent: 0,
+                startTime: 0,
+                endTime: 0,
+                timer: null,
+                // extrinsics
+                rotationFormat: "Euler Angles",
+                rotationFormats: ["Euler Angles", "Quaternion", "Rotation Matrix", "Rotation Vector"],
+                eulerUnit: true,
+                eulerOrder: "XYZ",
+                eulerOrders: ["XYZ", "XZY", "YXZ", "YZX", "ZXY", "ZYX"],
+                eulerX: 9.0568e+01,
+                eulerY: 5.9979e-02,
+                eulerZ: 8.9738e+01,
+                quatX: "",
+                quatY: "",
+                quatZ: "",
+                quatW: "",
+                mat11: "",
+                mat12: "",
+                mat13: "",
+                mat21: "",
+                mat22: "",
+                mat23: "",
+                mat31: "",
+                mat32: "",
+                mat33: "",
+                axisUnit: true,
+                axisX: "",
+                axisY: "",
+                axisZ: "",
+                axisW: "",
+                transX: -0.0318,
+                transY: 2.1305,
+                transZ: -1.5180,
+                // intrinsics
+                cameraModel: "Pinhole",
+                cameraModels: ["Pinhole", "Fisheye"],
+                fx: 2045.5062066838157,
+                fy: 2045.5062066838157,
+                cx: 950.0348507694016,
+                cy: 640.0969365240419,
+                dc0: 0,
+                dc1: 0,
+                dc2: 0,
+                dc3: 0,
+                dc4: 0,
+                // pipelines
+                pipelineModes: ["Default", "Finetune Both", "Finetune Rotation", "Finetune Translation"],
+                pipelineMode: "Default",
+                searchMode: true,
+                patchSize: 40,
+                initRotRange: 5,
+                initRotResolution: 1,
+                fineRotRange: 0,
+                coarseTransRange: 0.2,
+                fineTransRange: 0.2,
+                transResolution: 0,
+                rotResolution: 0,
+                coarseIters: 150,
+                fineIters: 150,
+                seed: 525,
+                // project params
+                pointSize: 1,
+                projectAttribute: false,
+                projectIndex: 0,
+                projectionLoading: false,
+                // THREE.js
+                scene: null,
+                render_camera: null,
+                controls: null,
+                cur_pcd: null,
+                // Socket
+                socket: null,
+                // image drag
+                startX: 0,
+                startY: 0,
+                dragging: false,
+                // History
+                dialogTableVisible: false,
+                curParam: null,
+                historyResults: [
+                    {
+                        "time": "2025-12-06 21:33:05",
+                        "mode": "Finetune Both",
+                        "extrinsics": {
+                            "rotation": [90, 0, 90],
+                            "translation": [0.1, 0.1, 0.1]
+                        },
+                        "result": {
+                            "rotation": [90, 0, 90],
+                            "translation": [0.1, 0.1, 0.1]
+                        }
+                    }
+                ]
+            },
+            computed: {
+                elapsedTime() {
+                    return Math.floor((this.endTime - this.startTime) / 1000);
+                }
+            },
+            methods: {
+                handleImageChange(file, fileList) {
+                    this.fileListImage = fileList;
+                    if (fileList.length == 1)
+                        setTimeout(() => { this.onImageChange(this.projectIndex, this.projectIndex) }, 100);
+                },
+                handlePcdChange(file, fileList) {
+                    this.fileListPcd = fileList;
+                },
+                handleImageRemove(file) {
+                    let fileListImage = this.fileListImage.filter(item => item != file);
+                    this.fileListImage = fileListImage;
+                },
+                handlePcdRemove(file) {
+                    let fileListPcd = this.fileListPcd.filter(item => item != file);
+                    this.fileListPcd = fileListPcd;
+                },
+                handlePictureCardPreview(file) {
+                    this.dialogImageUrl = file.url;
+                    this.dialogVisible = true;
+                },
+                handleDownload(file) {
+                    console.log(file);
+                },
+                handleProjectType(status) {
+                    if (this.fileListImage.length) {
+                        let canvas = document.getElementById(`carousel${this.projectIndex}`);
+                        if (canvas.getAttribute("project") === null || canvas.getAttribute("project") === false)
+                            return;
+                        this.projectPcdToImage();
+                    }
+                },
+                handlerReset(projectIndex) {
+                    this.onImageChange(projectIndex, -1);
+                    if (this.cur_pcd != null)
+                        this.scene.remove(this.cur_pcd);
+                    this.cur_pcd = null;
+                },
+                handleExample(example) {
+                    this.exampleLoading = true;
+
+                    const set_example_params = () => {
+                        this.fileListImage = [
+                            {
+                                "name": example.name + ".jpg",
+                                "url": example.img_url,
+                                "raw": example.img_blob
+                            }
+                        ];
+
+                        this.fileListPcd = [
+                            {
+                                "name": example.name + ".pcd",
+                                "url": example.pcd_url,
+                                "raw": example.pcd_blob
+                            }
+                        ];
+
+                        const data = example.params;
+                        const K = data["intrinsics"]["K"];
+                        this.fx = K[0];
+                        this.fy = K[1];
+                        this.cx = K[2];
+                        this.cy = K[3];
+
+                        const D = data["intrinsics"]["D"];
+                        this.dc0 = D[0];
+                        this.dc1 = D[1];
+                        this.dc2 = D[2];
+                        this.dc3 = D[3];
+                        if (D.length > 4) {
+                            this.cameraModel = "Pinhole";
+                            this.dc4 = D[4];
+                        }
+                        else {
+                            this.cameraModel = "Fisheye";
+                        }
+
+                        const quat = data["extrinsics"]["rotation"];
+                        this.rotationFormat = "Quaternion";
+                        this.quatW = quat[0];
+                        this.quatX = quat[1];
+                        this.quatY = quat[2];
+                        this.quatZ = quat[3];
+
+                        const trans = data["extrinsics"]["translation"];
+                        this.transX = trans[0];
+                        this.transY = trans[1];
+                        this.transZ = trans[2];
+
+                        this.exampleVisible = false;
+                        this.exampleLoading = false;
+                        this.handleImageChange(null, this.fileListImage)
+                    }
+
+                    const stop_loading = () => {
+                        this.exampleVisible = false;
+                        this.exampleLoading = false;
+                    };
+
+                    if (example.img_url != null && example.pcd_url != null && example.params != null) {
+                        set_example_params();
+                        return;
+                    }
+
+                    axios.get(`${example.img_path}`, {
+                        responseType: 'blob' // 关键！告诉 axios 返回的是二进制数据
+                    })
+                        .then(response => {
+                            let img_blob = response.data;
+                            let img_url = window.URL.createObjectURL(img_blob);
+
+                            axios.get(`${example.pcd_path}`, {
+                                responseType: 'blob' // 关键！告诉 axios 返回的是二进制数据
+                            })
+                                .then(response => {
+                                    let pcd_blob = response.data;
+                                    let pcd_url = window.URL.createObjectURL(pcd_blob);
+
+                                    axios.get(`${example.gt_path}`).then(response => {
+                                        example.params = response.data;
+                                        example.img_url = img_url;
+                                        example.img_blob = img_blob;
+                                        example.pcd_url = pcd_url;
+                                        example.pcd_blob = pcd_blob;
+                                        set_example_params();
+                                    }).catch(error => {
+                                        stop_loading();
+                                        this.$notify.error({
+                                            title: 'Error',
+                                            message: error
+                                        });
+                                    });
+
+                                })
+                                .catch(error => {
+                                    stop_loading();
+                                    this.$notify.error({
+                                        title: 'Error',
+                                        message: error
+                                    });
+
+                                });
+                        })
+                        .catch(error => {
+                            stop_loading();
+                            this.$notify.error({
+                                title: 'Error',
+                                message: error
+                            });
+                        });
+
+
+
+                },
+                getParamters() {
+                    let params = {};
+
+                    //pack extrinsics
+                    const quat = this.ExtrinsicToQuat();
+                    params["extrinsics"] = {
+                        "translation": [this.transX, this.transY, this.transZ],
+                        "rotation": [quat.w, quat.x, quat.y, quat.z],
+                    }
+
+                    params["intrinsics"] = {
+                        "K": [this.fx, this.fy, this.cx, this.cy],
+                        "D": this.cameraModel === "Pinhole" ? [this.dc0, this.dc1, this.dc2, this.dc3, this.dc4] : [this.dc0, this.dc1, this.dc2, this.dc3],
+                    }
+
+                    if (this.pipelineMode == "Default")
+                        params["pipelines"] = {
+                            "mode": 0,
+                            "patch_size": this.patchSize,
+                            "init_rot_range": this.initRotRange,
+                            "init_rot_resolution": this.initRotResolution,
+                            "coarse_trans_range": this.coarseTransRange,
+                            "coarse_iters": this.coarseIters,
+                            "fine_trans_range": this.fineTransRange,
+                            "fine_iters": this.fineIters,
+                            "seed": this.seed,
+                        }
+                    else if (this.pipelineMode == "Finetune Both")
+                        params["pipelines"] = {
+                            "mode": 1,
+                            "patch_size": this.patchSize,
+                            "fine_rot_range": this.fineRotRange,
+                            "fine_trans_range": this.fineTransRange,
+                            "fine_iters": this.fineIters,
+                            "seed": this.seed,
+                        }
+                    else if (this.pipelineMode == "Finetune Rotation")
+                        params["pipelines"] = {
+                            "mode": 2,
+                            "patch_size": this.patchSize,
+                            "search_mode": this.searchMode,
+                            "fine_rot_range": this.fineRotRange,
+                            "fine_rot_resolution": this.rotResolution,
+                            "fine_iters": this.fineIters,
+                            "seed": this.seed,
+                        }
+                    else
+                        params["pipelines"] = {
+                            "mode": 3,
+                            "patch_size": this.patchSize,
+                            "search_mode": this.searchMode,
+                            "fine_trans_range": this.fineTransRange,
+                            "fine_trans_resolution": this.transResolution,
+                            "fine_iters": this.fineIters,
+                            "seed": this.seed,
+                        }
+                    return params;
+                },
+                submitUpload() {
+                    if (this.fileListImage.length == 0 && this.fileListPcd.length == 0) {
+                        this.$notify.error({
+                            title: 'Error',
+                            message: 'Please select at least one pair of image and pointcloud!'
+                        });
+                        return
+                    }
+                    if (this.fileListImage.length != this.fileListPcd.length) {
+                        this.$notify.error({
+                            title: 'Error',
+                            message: 'Numbers of images and pointclouds must be equal!'
+                        });
+                        return;
+                    }
+                    this.uploading = true;
+                    this.startTime = Date.now();
+                    this.endTime = this.startTime;
+                    this.timer = setInterval(() => {
+                        this.endTime = Date.now();
+                    }, 1000);
+
+                    function concatenateArrayBuffers(...buffers) {
+                        // 计算总长度
+                        let totalLength = 0;
+                        buffers.forEach(buffer => {
+                            totalLength += buffer.byteLength;
+                        });
+
+                        // 创建一个新的Uint8Array
+                        const result = new Uint8Array(totalLength);
+
+                        // 将每个ArrayBuffer的内容复制到新的Uint8Array中
+                        let offset = 0;
+                        buffers.forEach(buffer => {
+                            result.set(new Uint8Array(buffer), offset);
+                            offset += buffer.byteLength;
+                        });
+
+                        return result.buffer; // 返回一个新的ArrayBuffer
+                    }
+
+                    params = this.getParamters();
+                    params["pair_nums"] = this.fileListImage.length;
+                    this.socket.send(JSON.stringify(params));
+                    this.curParam = params;
+
+                    for (let i in this.fileListImage) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const format = this.fileListImage[i].name.endsWith("jpg") ? 0 : this.fileListImage[i].name.endsWith("png") ? 1 : 2;
+                            const prepend = new ArrayBuffer(7);
+                            new Uint8Array(prepend).set([5, 25, 5, 25, 1, i, format])
+                            const fileData = e.target.result;
+                            const finalData = concatenateArrayBuffers(prepend, fileData);
+                            this.socket.send(finalData); // 通过WebSocket发送文件数据
+                            console.log('文件发送完成');
+                        };
+                        reader.onerror = (e) => {
+                            this.uploading = false;
+                            this.$notify.error({
+                                title: 'Error',
+                                message: e
+                            });
+                        }
+                        reader.readAsArrayBuffer(this.fileListImage[i].raw);
+                    }
+
+                    for (let i in this.fileListPcd) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const format = this.fileListPcd[i].name.endsWith("pcd") ? 0 : this.fileListPcd[i].name.endsWith("ply") ? 1 : 2;
+                            const prepend = new ArrayBuffer(7);
+                            new Uint8Array(prepend).set([5, 25, 5, 25, 0, i, format])
+                            const fileData = e.target.result;
+                            const finalData = concatenateArrayBuffers(prepend, fileData);
+                            this.socket.send(finalData); // 通过WebSocket发送文件数据
+                            console.log('文件发送完成');
+                        };
+                        reader.onerror = (e) => {
+                            this.uploading = false;
+                            this.$notify.error({
+                                title: 'Error',
+                                message: e
+                            });
+                        }
+                        reader.readAsArrayBuffer(this.fileListPcd[i].raw);
+                    }
+                },
+                onImageChange(cur, prev) {
+                    this.projectIndex = cur;
+                    let canvas = document.getElementById(`carousel${cur}`);
+                    if (prev != -1 && canvas.src)
+                        return
+
+                    const url = this.fileListImage[cur].url;
+                    canvas.src = url;
+                    canvas.style.transform = ""
+                    canvas.setAttribute("scale", 1.0);
+                    canvas.setAttribute("posX", 0);
+                    canvas.setAttribute("posY", 0);
+
+                    // canvas.addEventListener('wheel', (e) => {
+                    //     e.preventDefault();
+                    //     let scale = parseFloat(canvas.getAttribute("scale")) || 1.0;
+                    //     let posX = parseFloat(canvas.getAttribute("posX")) || 0.0;
+                    //     let posY = parseFloat(canvas.getAttribute("posY")) || 0.0;
+                    //     const rect = canvas.getBoundingClientRect();
+                    //     const x = e.clientX - rect.left;
+                    //     const y = e.clientY - rect.top;
+
+                    //     const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+                    //     const newScale = Math.min(Math.max(scale * factor, 0.2), 10);
+                    //     // const newScale = 0.5;
+
+                    //     posX = x - (x - posX) * (newScale / scale);
+                    //     posY = y - (y - posY) * (newScale / scale);
+                    //     // scale = newScale;
+
+                    //     canvas.style.transformOrigin = "0 0"
+                    //     canvas.style.transform = `translate(${posX}px, ${posY}px) scale(${newScale})`
+                    //     canvas.setAttribute("scale", newScale);
+                    //     canvas.setAttribute("posX", posX);
+                    //     canvas.setAttribute("posY", posY);
+
+                    // });
+
+                    // canvas.addEventListener('mousedown', e => {
+                    //     e.preventDefault()
+                    //     let posX = parseFloat(canvas.getAttribute("posX")) || 0.0;
+                    //     let posY = parseFloat(canvas.getAttribute("posY")) || 0.0;
+                    //     this.dragging = true;
+                    //     this.startX = e.clientX - posX;
+                    //     this.startY = e.clientY - posY;
+                    // });
+
+                    // canvas.addEventListener('mousemove', e => {
+                    //     if (!this.dragging) return;
+                    //     let posX = e.clientX - this.startX;
+                    //     let posY = e.clientY - this.startY;
+                    //     let scale = parseFloat(canvas.getAttribute("scale")) || 1.0;
+                    //     canvas.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`
+                    //     canvas.setAttribute("scale", scale);
+                    //     canvas.setAttribute("posX", posX);
+                    //     canvas.setAttribute("posY", posY);
+                    // });
+
+                    // canvas.addEventListener('mouseup', () => {
+                    //     this.dragging = false
+                    // });
+
+
+                    // if (canvas.getAttribute("url") != url) {
+                    //     const img = new Image();
+                    //     img.src = url;
+                    //     let img_ori = cv.imread(img);
+                    //     canvas.setAttribute("url", url);
+                    //     cv.imshow(canvas, img_ori);
+
+                    //     img_ori.delete();
+                    // }
+                },
+                getIntrinsicMat() {
+                    const K = new THREE.Matrix3()
+                    K.elements = [this.fx, 0, 0, 0, this.fy, 0, this.cx, this.cy, 1];
+                    return K;
+                },
+                getIntrinsicMatOpencv() {
+                    let K = new cv.Mat(3, 3, cv.CV_32F);
+                    K.data32F[0] = this.fx;
+                    K.data32F[1] = 0;
+                    K.data32F[2] = this.cx;
+                    K.data32F[3] = 0;
+                    K.data32F[4] = this.fy;
+                    K.data32F[5] = this.cy;
+                    K.data32F[6] = 0;
+                    K.data32F[7] = 0;
+                    K.data32F[8] = 1;
+                    return K;
+                },
+                onEulerUnitChange(is_deg) {
+                    const mult = is_deg ? 180 / Math.PI : Math.PI / 180;
+                    this.eulerX *= mult;
+                    this.eulerY *= mult;
+                    this.eulerZ *= mult;
+                },
+                onAxisUnitChange(is_deg) {
+                    const mult = is_deg ? 180 / Math.PI : Math.PI / 180;
+                    this.axisW *= mult;
+                },
+                onExtrinsicFormatChange(vis) {
+                    if (!vis) return;
+                    const quaternion = this.ExtrinsicToQuat();
+                    this.quatX = quaternion.x;
+                    this.quatY = quaternion.y;
+                    this.quatZ = quaternion.z;
+                    this.quatW = quaternion.w;
+
+                    const rotationMatrix = new THREE.Matrix4();
+                    rotationMatrix.makeRotationFromQuaternion(quaternion);
+                    this.mat11 = rotationMatrix.elements[0]
+                    this.mat21 = rotationMatrix.elements[1]
+                    this.mat31 = rotationMatrix.elements[2]
+                    this.mat12 = rotationMatrix.elements[4]
+                    this.mat22 = rotationMatrix.elements[5]
+                    this.mat32 = rotationMatrix.elements[6]
+                    this.mat13 = rotationMatrix.elements[8]
+                    this.mat23 = rotationMatrix.elements[9]
+                    this.mat33 = rotationMatrix.elements[10]
+
+                    const euler = new THREE.Euler();
+                    euler.setFromQuaternion(quaternion, this.eulerOrder);
+                    const mult = this.eulerUnit ? 180 / Math.PI : 1.0;
+                    this.eulerX = mult * euler.x;
+                    this.eulerY = mult * euler.y;
+                    this.eulerZ = mult * euler.z;
+
+                    const angle = 2 * Math.acos(quaternion.w);
+                    const axis = new THREE.Vector3(quaternion.x, quaternion.y, quaternion.z).normalize();
+                    const mult1 = this.axisUnit ? 180 / Math.PI : 1.0;
+                    this.axisX = axis.x;
+                    this.axisY = axis.y;
+                    this.axisZ = axis.z;
+                    this.axisW = angle * mult1;
+                },
+                ExtrinsicToQuat() {
+                    const quaternion = new THREE.Quaternion();
+                    if (this.rotationFormat === "Euler Angles") {
+                        const mult = this.eulerUnit ? Math.PI / 180.0 : 1.0;
+                        const euler3 = new THREE.Euler(this.eulerX * mult, this.eulerY * mult, this.eulerZ * mult, this.eulerOrder);
+                        quaternion.setFromEuler(euler3);
+                    }
+                    else if (this.rotationFormat === "Quaternion") {
+                        quaternion.set(this.quatX, this.quatY, this.quatZ, this.quatW);
+                    }
+                    else if (this.rotationFormat === "Rotation Matrix") {
+                        const elements = [
+                            this.mat11, this.mat21, this.mat31, 0,
+                            this.mat12, this.mat22, this.mat32, 0,
+                            this.mat13, this.mat23, this.mat33, 0,
+                            0, 0, 0, 1
+                        ];
+                        const rotationMatrix = new THREE.Matrix4().fromArray(elements);
+                        quaternion.setFromRotationMatrix(rotationMatrix);
+                    }
+                    else {
+                        const axis = new THREE.Vector3(this.axisX, this.axisY, this.axisZ); // Y轴
+                        const mult = this.axisUnit ? Math.PI / 180.0 : 1.0;
+                        const angle = this.axisW * mult; // 45度
+                        quaternion.setFromAxisAngle(axis, angle);
+                    }
+                    return quaternion;
+                },
+                QuatToEulerArray(quat, scalar_first = true, eulerOrder = "XYZ", degree = true) {
+                    const quaternion = new THREE.Quaternion();
+                    if (scalar_first)
+                        quaternion.set(quat[1], quat[2], quat[3], quat[0]);
+                    else
+                        quaternion.set(quat[0], quat[1], quat[2], quat[3]);
+
+                    const euler = new THREE.Euler();
+                    euler.setFromQuaternion(quaternion, eulerOrder);
+
+                    const mult = degree ? 180 / Math.PI : 1.0;
+                    return [euler.x * mult, euler.y * mult, euler.z * mult]
+                },
+                getExtrinsicMat() {
+                    const T = new THREE.Matrix4()
+                    const quaternion = this.ExtrinsicToQuat()
+                    T.makeRotationFromQuaternion(quaternion)
+                    T.setPosition(this.transX, this.transY, this.transZ);
+                    return T;
+                },
+                getRDF2FLUMat() {
+                    const elements = [
+                        0, -1, 0, 0,
+                        0, 0, -1, 0,
+                        1, 0, 0, 0,
+                        0, 0, 0, 1
+                    ];
+                    const rotationMatrix = new THREE.Matrix4().fromArray(elements);
+                    return rotationMatrix;
+                },
+                applyExtrinsic(index, is_initial) {
+
+                    let key = is_initial ? "extrinsics" : "result";
+                    let euler = this.historyResults[index][key]["rotation"].map((x) => { return parseFloat(x) })
+                    let translation = this.historyResults[index][key]["translation"].map((x) => { return parseFloat(x) })
+
+                    this.rotationFormat = "Euler Angles"
+                    this.eulerUnit = true;
+                    this.eulerX = euler[0];
+                    this.eulerY = euler[1];
+                    this.eulerZ = euler[2];
+
+                    this.transX = translation[0];
+                    this.transY = translation[1];
+                    this.transZ = translation[2];
+                },
+                renderRotationMatLatex() {
+                    const data = [
+                        [this.mat11, this.mat12, this.mat13],
+                        [this.mat21, this.mat22, this.mat23],
+                        [this.mat31, this.mat32, this.mat33],
+                    ];
+                    // const fmt = n => n.toExponential(4).replace(/e\+?/, '\\times 10^{') + '}';
+                    const fmt = n => n;
+                    const latex = String.raw`\begin{bmatrix}
+                    ${data.map(row => row.map(fmt).join(' & ')).join(' \\\\ ')}
+                    \end{bmatrix}`;
+                    console.log(latex)
+                    katex.render(latex, document.getElementById('rotMatLatex'), { displayMode: true });
+                },
+                getDistCoefsOpencv() {
+                    if (this.cameraModel === "Pinhole") {
+                        let D = new cv.Mat(1, 5, cv.CV_32F);
+                        D.data32F[0] = this.dc0;
+                        D.data32F[1] = this.dc1;
+                        D.data32F[2] = this.dc2;
+                        D.data32F[3] = this.dc3;
+                        D.data32F[4] = this.dc4;
+                        return D;
+                    }
+                    else {
+                        let D = new cv.Mat(1, 4, cv.CV_32F);
+                        D.data32F[0] = this.dc0;
+                        D.data32F[1] = this.dc1;
+                        D.data32F[2] = this.dc2;
+                        D.data32F[3] = this.dc3;
+                        return D;
+                    }
+                },
+                exportExtrinsics() {
+                    this.onExtrinsicFormatChange(true);
+
+                    const data = JSON.stringify({
+                        "translation": {
+                            "x": this.transX,
+                            "y": this.transY,
+                            "z": this.transZ
+                        },
+                        "euler": {
+                            "order": this.eulerOrder,
+                            "degree": this.eulerUnit,
+                            "x": this.eulerX,
+                            "y": this.eulerY,
+                            "z": this.eulerZ
+                        },
+                        "quaternion": {
+                            "x": this.quatX,
+                            "y": this.quatY,
+                            "z": this.quatZ,
+                            "w": this.quatW
+                        },
+                        "rotationMatrix":
+                            [
+                                [this.mat11, this.mat21, this.mat31],
+                                [this.mat12, this.mat22, this.mat32],
+                                [this.mat13, this.mat23, this.mat33]
+                            ]
+                        ,
+                        "axisAngle": {
+                            "degree": this.axisUnit,
+                            "x": this.axisX,
+                            "y": this.axisY,
+                            "z": this.axisZ,
+                            "angle": this.axisW
+                        },
+                        "transformMatrix": [
+                            [this.mat11, this.mat21, this.mat31, this.transX],
+                            [this.mat12, this.mat22, this.mat32, this.transY],
+                            [this.mat13, this.mat23, this.mat33, this.transZ],
+                            [0, 0, 0, 1]
+                        ]
+                    }, null, 4);
+                    const blob = new Blob([data], { type: 'application/json' });
+
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'data.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                },
+                projectPcdToImage() {
+                    this.projectionLoading = true;
+
+                    // load pcd
+                    const loader = new PCDLoader();
+                    loader.load(this.fileListPcd[this.projectIndex].url, (points) => {
+                        // 创建点云材质
+                        // const material = new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, vertexColors: true });
+
+                        // detect intensity
+                        if (this.projectAttribute && points.geometry.getAttribute("intensity") === null) {
+                            this.projectAttribute = false;
+                            this.$notify.error({
+                                title: 'Error',
+                                message: 'Intensity is absent in the point cloud!'
+                            });
+                            return;
+                        }
+
+                        // load image
+                        let img = new Image();
+                        img.src = this.fileListImage[this.projectIndex].url;
+                        let img_ori = cv.imread(img);
+                        let img_out = img_ori.clone();
+                        const h = img_out.rows;
+                        const w = img_out.cols;
+
+                        // load extrinsic
+                        const T_lc = this.getExtrinsicMat();
+
+                        // load intrinsic
+                        const K = this.getIntrinsicMat();
+
+                        // undistortion
+                        let cameraMatrix = this.getIntrinsicMatOpencv();
+                        let distCoeffs = this.getDistCoefsOpencv();
+                        let R = new cv.Mat(3, 3, cv.CV_32F);
+                        R.data32F[0] = 1;
+                        R.data32F[1] = 0;
+                        R.data32F[2] = 0;
+                        R.data32F[3] = 0;
+                        R.data32F[4] = 1;
+                        R.data32F[5] = 0;
+                        R.data32F[6] = 0;
+                        R.data32F[7] = 0;
+                        R.data32F[8] = 1;
+                        let size = new cv.Size(w, h);
+                        let map1 = new cv.Mat();
+                        let map2 = new cv.Mat();
+                        if (this.cameraModel === "Pinhole")
+                            cv.initUndistortRectifyMap(cameraMatrix, distCoeffs, R, cameraMatrix, size, cv.CV_32FC1, map1, map2);
+                        else
+                            cv.fisheye_initUndistortRectifyMap(cameraMatrix, distCoeffs, R, cameraMatrix, size, cv.CV_32FC1, map1, map2);
+                        cv.remap(img_ori, img_out, map1, map2, cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar(0, 0, 0));
+
+                        xyzs = points.geometry.getAttribute("position");
+                        let intensities;
+                        if (this.projectAttribute) {
+                            const intensities_ori = points.geometry.getAttribute("intensity").array;
+                            const index_array = Array.from({ length: intensities_ori.length }, (_, index) => index);
+                            index_array.sort((a, b) => { return intensities_ori[a] - intensities_ori[b]; })
+                            intensities = new Float32Array(intensities_ori.length)
+                            index_array.forEach((value, index) => { intensities[value] = Math.floor(index / intensities_ori.length * 256) / 256 })
+                        }
+
+                        // Transform to camera coordinate
+                        let max_z = -Infinity;
+                        let min_z = Infinity;
+
+                        for (let i = 0; i < xyzs.count; ++i) {
+                            const vector = new THREE.Vector3().fromArray(xyzs.array, i * 3);
+                            vector.applyMatrix4(T_lc);
+                            vector.toArray(xyzs.array, i * 3);
+                            if (vector.z > 0.02) {
+                                if (!this.projectAttribute) {
+                                    max_z = Math.max(max_z, vector.z);
+                                    min_z = Math.min(min_z, vector.z);
+                                } else {
+                                    // max_z = Math.max(max_z, intensities.array[i]);
+                                    // min_z = Math.min(min_z, intensities.array[i]);
+                                }
+                            }
+                        }
+
+                        // Project to pixel
+                        let color = [];
+                        const r = this.pointSize;
+                        for (let i = 0; i < xyzs.count; ++i) {
+                            const vector = new THREE.Vector3().fromArray(xyzs.array, i * 3);
+                            if (vector.z < 0.02) {
+                                color.push(1.0, 1.0, 1.0);
+                                continue;
+                            }
+                            vector.applyMatrix3(K);
+                            let u = Math.floor(vector.x / vector.z);
+                            if (u < 0 || u >= w) {
+                                color.push(1.0, 1.0, 1.0);
+                                continue;
+                            }
+                            let v = Math.floor(vector.y / vector.z);
+                            if (v < 0 || v >= h) {
+                                color.push(1.0, 1.0, 1.0);
+                                continue;
+                            }
+
+                            let s;
+                            let rgb;
+                            if (!this.projectAttribute) {
+                                s = Math.min((vector.z - min_z) / (max_z - min_z), 1.0);
+                                rgb = Spectral(s);
+                            }
+                            else {
+                                s = intensities[i];
+                                rgb = bwr(s);
+                            }
+
+                            for (let vi = Math.max(0, v - r); vi < Math.min(v + r, h); ++vi)
+                                for (let ui = Math.max(0, u - r); ui < Math.min(u + r, w); ++ui) {
+                                    img_out.ucharPtr(vi, ui)[0] = rgb[0];
+                                    img_out.ucharPtr(vi, ui)[1] = rgb[1];
+                                    img_out.ucharPtr(vi, ui)[2] = rgb[2];
+                                }
+
+                            rgb = img_ori.ucharPtr(v, u);
+                            color.push(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255);
+                        }
+
+                        let canvas = document.getElementById(`carousel${this.projectIndex}`);
+                        canvas.setAttribute("project", true);
+                        canvas.setAttribute("scale", 1.0);
+                        canvas.setAttribute("offsetX", 0);
+                        canvas.setAttribute("offsetY", 0);
+                        const tmpCanvas = document.createElement('canvas');
+                        cv.imshow(tmpCanvas, img_out);           // 把 Mat 画到 canvas
+                        canvas.src = tmpCanvas.toDataURL('image/png'); // base64
+
+                        // transform from rdf to flu
+                        const T_rdf2flu = this.getRDF2FLUMat()
+                        for (let i = 0; i < xyzs.count; ++i) {
+                            const vector = new THREE.Vector3().fromArray(xyzs.array, i * 3);
+                            vector.applyMatrix4(T_rdf2flu);
+                            vector.toArray(xyzs.array, i * 3);
+                        }
+
+                        points.geometry.setAttribute('color', new THREE.Float32BufferAttribute(color, 3));
+
+                        const material = new THREE.PointsMaterial({
+                            size: 0.1,
+                            blending: THREE.NormalBlending,
+                            // depthTest: false,
+                            // transparent: true,
+                            opacity: 1.0,
+                            vertexColors: true
+                        });
+
+                        // 创建点云对象
+                        const pointCloud = new THREE.Points(points.geometry, material);
+                        this.scene.add(pointCloud);
+                        if (this.cur_pcd != null)
+                            this.scene.remove(this.cur_pcd);
+                        this.cur_pcd = pointCloud;
+
+                        this.render_camera.position.set(-0.2, 0, 0);
+                        this.render_camera.updateProjectionMatrix();
+                        this.controls.target.copy(new THREE.Vector3(1, 0, 0));
+                        this.controls.update();
+
+                        this.projectionLoading = false;
+                    },
+                        (xhr) => { },
+                        (err) => {                      // onError
+                            this.projectionLoading = false;
+                            this.$notify.error({
+                                title: 'Error',
+                                message: err
+                            });
+                        }
+                    )
+                },
+                formatProgress(percentage) {
+                    let status = this.calibrating ? this.calibratingStatus : "Uploading...";
+                    return `${status}\n${percentage.toFixed(2)}%`
+                },
+                onImageWheel(event) {
+                    event.preventDefault();
+                    let img = event.target;
+                    let delta = event.deltaY > 0 ? 1 / 1.1 : 1.1;
+
+                    let image_x = img.offsetLeft;
+                    let image_y = img.offsetTop;
+                    let mouse_x = event.offsetX;
+                    let mouse_y = event.offsetY;
+
+                    let image_scale_old = eval(img.style.height.substr(0, img.style.height.length - 1));
+                    let image_scale_new = image_scale_old * delta;
+                    let scale = image_scale_new / image_scale_old;
+
+                    let image_x_old = eval(img.style.left.substr(0, img.style.left.length - 2));
+                    let image_y_old = eval(img.style.top.substr(0, img.style.top.length - 2));
+                    let image_x_new = mouse_x * (1 - scale) + image_x_old;
+                    let image_y_new = mouse_y * (1 - scale) + image_y_old;
+                    img.style.height = String(image_scale_new) + "%";
+                    img.style.left = String(image_x_new) + "px";
+                    img.style.top = String(image_y_new) + "px";
+
+                },
+                onImageMove(event) {
+                    event.preventDefault();
+                    if (event.buttons) {
+                        let img = event.target;
+                        let ori_top = eval(img.style.top.substr(0, img.style.top.length - 2));
+                        let ori_left = eval(img.style.left.substr(0, img.style.left.length - 2));
+                        img.style.top = String(ori_top + event.movementY) + "px";
+                        img.style.left = String(ori_left + event.movementX) + "px";
+                    }
+                },
+                historyHeaderStyle({ column, columnIndex }) {
+                    if (columnIndex === 2) {
+                        return { fontSize: '20px', color: 'gray' };
+                    }
+                    else if (columnIndex === 3) {
+                        return { fontSize: '20px', color: 'coral' };
+                    }
+                    else
+                        return { fontSize: '20px', color: 'black' };
+                },
+
+            },
+            mounted: function () {
+                // 创建场景、摄像机和渲染器
+                var scene = new THREE.Scene();
+                var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                var renderer = new THREE.WebGLRenderer();
+                var target_element = document.getElementById("THREE_container");
+                console.log(target_element.clientWidth)
+                target_element.appendChild(renderer.domElement);
+                renderer.setSize(target_element.clientWidth, target_element.clientWidth);
+                setTimeout(() => {
+                    renderer.setSize(target_element.clientWidth, target_element.clientWidth * 9 / 16);
+                }, 100);
+
+                window.addEventListener('resize', function () {
+                    const width = target_element.clientWidth;
+                    const height = width * 9 / 16;
+                    renderer.setSize(width, height);
+                    camera.aspect = width / height;
+                    camera.updateProjectionMatrix();
+                    renderer.render(scene, camera);
+                });
+
+                // 设置摄像机位置
+                camera.position.z = 5;
+                camera.up = new THREE.Vector3(0, 0, 1);
+
+                // 创建坐标轴辅助对象
+                const axesHelper = new THREE.AxesHelper(0.2); // 参数是坐标轴的长度
+                scene.add(axesHelper);
+
+                // 创建 OrbitControls
+                var controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.listenToKeyEvents(window);
+
+                // 渲染循环
+                var animate = function () {
+                    requestAnimationFrame(animate);
+                    controls.update(); // 只有在使用 damping 时才需要
+                    renderer.render(scene, camera);
+                };
+
+                animate();
+
+                this.scene = scene;
+                this.render_camera = camera;
+                this.controls = controls;
+
+                // websocket
+                const socket = new WebSocket(`ws://${window.location.host}/ws/claim`);
+                socket.onopen = () => {
+                    console.log('WebSocket连接已打开');
+                };
+
+                socket.onmessage = (event) => {
+                    console.log('从服务器接收到消息:', event.data);
+                    const j_data = JSON.parse(event.data)
+                    if (j_data["type"] == 0) {
+                        let sum = 0.0;
+                        let frame_nums = j_data["img_flags"].length
+                        for (let i = 0; i < frame_nums; ++i) {
+                            sum += j_data["img_flags"][i]
+                            sum += j_data["pcd_flags"][i]
+                        }
+                        this.progressPercent = (sum / frame_nums / 2) * 100;
+                    }
+                    else if (j_data["type"] == 1) {
+                        this.uploading = false;
+                        this.calibrating = true;
+                        this.calibratingStatus = j_data["step"];
+                        this.progressPercent = (j_data["iter"] / (j_data["total_iters"] - 1)) * 100;
+                    }
+                    else if (j_data["type"] == 2) {
+                        this.uploading = false;
+                        this.calibrating = false;
+                        this.calibratingStatus = "";
+                        this.progressPercent = 0;
+                        if (j_data["status"] == 0) {
+                            this.$notify.error({
+                                title: 'Error',
+                                message: 'Calibration Fail! Please try again!'
+                            })
+                            return;
+                        }
+
+                        const prev_fmt = this.rotationFormat;
+                        this.rotationFormat = "Rotation Matrix";
+                        const T_l2c = j_data["result"];
+                        this.mat11 = T_l2c[0][0];
+                        this.mat12 = T_l2c[0][1];
+                        this.mat13 = T_l2c[0][2];
+                        this.mat21 = T_l2c[1][0];
+                        this.mat22 = T_l2c[1][1];
+                        this.mat23 = T_l2c[1][2];
+                        this.mat31 = T_l2c[2][0];
+                        this.mat32 = T_l2c[2][1];
+                        this.mat33 = T_l2c[2][2];
+                        this.transX = T_l2c[0][3];
+                        this.transY = T_l2c[1][3];
+                        this.transZ = T_l2c[2][3];
+                        this.onExtrinsicFormatChange(true);
+                        this.rotationFormat = prev_fmt;
+
+                        const now = new Date();
+                        const fmt_time = now.getFullYear() + '-' +
+                            (now.getMonth() + 1).toString().padStart(2, '0') + '-' +
+                            now.getDate().toString().padStart(2, '0') + ' ' +
+                            now.getHours().toString().padStart(2, '0') + ':' +
+                            now.getMinutes().toString().padStart(2, '0') + ':' +
+                            now.getSeconds().toString().padStart(2, '0');
+                        this.curParam["time"] = fmt_time;
+                        this.curParam["mode"] = this.pipelineMode;
+
+                        const fmt_ex = (x) => { return x.toFixed(4) };
+                        this.curParam["extrinsics"]["rotation"] = this.QuatToEulerArray(this.curParam["extrinsics"]["rotation"], true, "XYZ", true).map(fmt_ex);
+                        this.curParam["extrinsics"]["translation"] = this.curParam["extrinsics"]["translation"].map(fmt_ex);
+                        this.curParam["result"] = {
+                            "translation": [this.transX, this.transY, this.transZ].map(fmt_ex),
+                            "rotation": this.QuatToEulerArray([this.quatW, this.quatX, this.quatY, this.quatZ], true, "XYZ", true).map(fmt_ex)
+                        }
+                        this.historyResults.push(this.curParam);
+
+                        this.$notify.success({
+                            title: 'success',
+                            message: 'Calibration Success!'
+                        });
+                    }
+                };
+
+                socket.onerror = (error) => {
+                    console.error('WebSocket发生错误:', error);
+                };
+
+                socket.onclose = () => {
+                    console.log('WebSocket连接已关闭');
+                };
+                this.socket = socket;
+
+                // get example data
+                axios.get(window.location.origin + `/get_example_info`).then(
+                    (response) => {
+                        let data = response.data
+                        this.exampleInfos = []
+                        data.forEach((val) => {
+                            val["img_url"] = null;
+                            val["img_blob"] = null;
+                            val["pcd_url"] = null;
+                            val["pcd_blob"] = null;
+                            val["params"] = null;
+                            this.exampleInfos.push(val);
+                        })
+                    }
+                ).catch(
+                    (error) => {
+                        console.log(error)
+                    }
+                )
+            },
+
+        });
+    </script>
+
+    <script>
+
+    </script>
+</body>
+
+</html>

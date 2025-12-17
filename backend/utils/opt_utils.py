@@ -48,7 +48,7 @@ def perturb_transform(
     if seed is None:
         rng = None
     else:
-        rng = torch.Generator()
+        rng = torch.Generator(device=T_init.device)
         rng.manual_seed(seed)
 
     T_out = T_init.clone()
@@ -219,7 +219,7 @@ def random_search_transform(
     if seed is None:
         rng = None
     else:
-        rng = torch.Generator()
+        rng = torch.Generator(device=T_init.device)
         rng.manual_seed(seed)
     
     device = T_init.device
@@ -335,7 +335,7 @@ def random_search_transform2(
     if seed is None:
         rng = None
     else:
-        rng = torch.Generator()
+        rng = torch.Generator(device=T_init.device)
         rng.manual_seed(seed)
     
     device = T_init.device

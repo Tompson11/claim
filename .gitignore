@@ -1,3 +1,5 @@
 backend/model/Depth_Anything_V2/ckpt/*
 build
 __pycache__
+results
+*.so

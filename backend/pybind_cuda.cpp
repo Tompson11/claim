@@ -2,7 +2,7 @@
 #include <torch/extension.h>
 #include "src/loss_calculation.h"
 
-PYBIND11_MODULE(lidar_image_align, m) {
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
   m.def("depth_sim_loss", &LossCalculationCUDA);
   m.def("depth_sim_loss2", &LossCalculationCUDA2);
   m.def("generate_lidar_depth", &LidarDepthGenerationCUDA);

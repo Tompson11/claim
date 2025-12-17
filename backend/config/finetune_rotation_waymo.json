@@ -1,0 +1,48 @@
+{
+    "base_dir": "./example_dataset/Waymo",
+    "frame_nums_per_batch" : 1,
+    "overlap_nums_between_batch" : 0,
+    "data_params": {
+        "mono_depth_model": "depth_anything_v2",
+        "half_resolution": false,
+        "points_down_sample_step": 1,
+        "intensity_equalization": true,
+        "gray_image_equalization": true,
+        "shuffle": false
+    },
+    "pipeline_params": {
+        "mode": 2,
+        "patch_size": 80,
+        "search_mode": 1,
+        "fine_rot_range": 1.0,
+        "fine_rot_resolution": 0.05
+    },
+    "intrinsics": {
+        "K": [
+            2055.556149361639, 
+            2055.556149361639, 
+            939.6574698861468, 
+            641.0721821943271
+        ],
+        "D": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "extrinsics": {
+        "translation": [
+            -0.02500741,
+            2.13572543,
+            -1.51037636
+        ],
+        "rotation": [
+            0.48589019094495783,
+            0.5081155240910264,
+            -0.5071631929634993,
+            0.498512619924754
+        ]
+    }
+}

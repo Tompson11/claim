@@ -1,0 +1,6 @@
+opencv-python
+scipy
+tqdm
+matplotlib
+open3d
+numpy==1.24.0
